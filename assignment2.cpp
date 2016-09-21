@@ -43,7 +43,7 @@ eda221::Assignment2::Assignment2()
 {
 	Log::View::Init();
 	window = Window::Create("EDA221: Assignment 2", config::resolution_x,
-	                        config::resolution_y, config::msaa_rate, false);
+		config::resolution_y, config::msaa_rate, false);
 	if (window == nullptr) {
 		Log::View::Destroy();
 		throw std::runtime_error("Failed to get a window: aborting!");
@@ -68,14 +68,14 @@ void
 eda221::Assignment2::run()
 {
 	// Load the sphere geometry
-	auto const shape = parametric_shapes::createCircleRing(4u, 10u, 0.01f, 0.01f);
+	auto const shape = parametric_shapes::createSphere(10u, 10u, 2.0f);
 	if (shape.vao == 0u)
 		return;
 
 	// Set up the camera
 	FPSCameraf mCamera(bonobo::pi / 4.0f,
-	                   static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
-	                   0.01f, 1000.0f);
+		static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
+		0.01f, 1000.0f);
 	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
 	mCamera.mMouseSensitivity = 0.003f;
 	mCamera.mMovementSpeed = 0.25f * 12.0f;
@@ -104,22 +104,25 @@ eda221::Assignment2::run()
 	}
 
 	auto const light_position = glm::vec3(-2.0f, 4.0f, 2.0f);
-	auto const set_uniforms = [&light_position](GLuint program){
+	auto const set_uniforms = [&light_position](GLuint program) {
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
 	};
 
-	auto circle_rings = Node();
-	circle_rings.set_geometry(shape);
-	circle_rings.set_program(fallback_shader, set_uniforms);
+	auto sphere1 = Node();
+	sphere1.set_geometry(shape);
+	sphere1.set_program(fallback_shader, set_uniforms);
 
+	auto sphere2 = Node();
+	sphere2.set_geometry(shape);
+	sphere2.set_program(fallback_shader, set_uniforms);
 
 	//! \todo Create a tesselated sphere and a tesselated torus
-	auto const shapeSphere = parametric_shapes::createSphere(20u, 20u, 2.0f);
-	if (shapeSphere.vao == 0u)
-		return;
-	auto sphere = Node();
-	sphere.set_geometry(shapeSphere);
-	sphere.set_program(fallback_shader, set_uniforms);
+	//auto const shapeSphere = parametric_shapes::createSphere(20u, 20u, 2.0f);
+	//if (shapeSphere.vao == 0u)
+	//	return;
+	//auto sphere = Node();
+	//sphere.set_geometry(shapeSphere);
+	//sphere.set_program(fallback_shader, set_uniforms);
 
 
 
@@ -131,16 +134,26 @@ eda221::Assignment2::run()
 	//glEnable(GL_CULL_FACE);
 	//glCullFace(GL_FRONT);
 	//glCullFace(GL_BACK);
-	
-	
-	glm::vec3 cp[2]; // N control points
-	cp[0] = glm::vec3(0.0f, 0.0f, 0.0f);
-	cp[1] = glm::vec3(1.0f, 1.0f, 1.0f);
-	for (int i = 0; i < 2; i++) {
-		cp[i] = glm::vec3(i, i, std::cos(i));
-	}
+
+	glm::vec3 newPointLin = glm::vec3(0.0f,0.0f,0.0f);
+	glm::vec3 newPointCR = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 cp[10]; // N control points
+	int N = 10;
+	cp[0] = glm::vec3(-0.05f, 0.0f, 0.0f);
+	cp[1] = glm::vec3(0.0f, -0.05f, 0.0f);
+	cp[2] = glm::vec3(0.0f, 0.0f,-0.05f);
+	cp[3] = glm::vec3(0.0f, 0.1f, 0.0f);
+	cp[4] = glm::vec3(0.05f, 0.0f, 0.0f);
+	cp[5] = glm::vec3(0.1f, 0.0f, 0.1f);
+	cp[6] = glm::vec3(0.0f, -0.1f, 0.0f);
+	cp[7] = glm::vec3(0.0f, 0.0f, 0.0f);
+	cp[8] = glm::vec3(-0.1f, 0.05f, -0.05f);
+	cp[9] = glm::vec3(0.0f, 0.0f, 0.0f);
+	//for (int i = 0; i < 4; i++) {
+	//	cp[i] = glm::vec3((rand()%100)/100, (rand() % 100) / 100, (rand() % 100) / 100);
+	//}
 	float path_pos = 0.0f;
-	float pos_velocity = 0.1f;
+	float pos_velocity = 0.005f;
 
 	f64 ddeltatime;
 	size_t fpsSamples = 0;
@@ -161,41 +174,52 @@ eda221::Assignment2::run()
 		mCamera.Update(ddeltatime, *inputHandler);
 
 		ImGui_ImplGlfwGL3_NewFrame();
-
+		
 
 		if (inputHandler->GetKeycodeState(GLFW_KEY_1) & JUST_PRESSED) {
-			circle_rings.set_program(fallback_shader, set_uniforms);
+			sphere1.set_program(fallback_shader, set_uniforms);
+			sphere2.set_program(fallback_shader, set_uniforms);
 		}
 		if (inputHandler->GetKeycodeState(GLFW_KEY_2) & JUST_PRESSED) {
-			circle_rings.set_program(diffuse_shader, set_uniforms);
+			sphere1.set_program(diffuse_shader, set_uniforms);
+			sphere2.set_program(diffuse_shader, set_uniforms);
 		}
 		if (inputHandler->GetKeycodeState(GLFW_KEY_3) & JUST_PRESSED) {
-			circle_rings.set_program(normal_shader, set_uniforms);
+			sphere1.set_program(normal_shader, set_uniforms);
+			sphere2.set_program(normal_shader, set_uniforms);
 		}
 		if (inputHandler->GetKeycodeState(GLFW_KEY_4) & JUST_PRESSED) {
-			circle_rings.set_program(texcoord_shader, set_uniforms);
+			sphere1.set_program(texcoord_shader, set_uniforms);
+			sphere2.set_program(texcoord_shader, set_uniforms);
 		}
 		if (inputHandler->GetKeycodeState(GLFW_KEY_Z) & JUST_PRESSED) {
 			polygon_mode = get_next_mode(polygon_mode);
 		}
 		switch (polygon_mode) {
-			case polygon_mode_t::fill:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				break;
-			case polygon_mode_t::line:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				break;
-			case polygon_mode_t::point:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-				break;
+		case polygon_mode_t::fill:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			break;
+		case polygon_mode_t::line:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			break;
+		case polygon_mode_t::point:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+			break;
 		}
 
-		circle_rings.rotate_y(0.00f);
+		sphere1.rotate_y(0.00f);
 
 
 		//! \todo Interpolate the movement of a shape between various
 		//!        control points
 		int i = floor(path_pos);
+
+		glm::vec3 newPointLin = interpolation::evalLERP(cp[i%N], cp[(i + 1) % N], path_pos - i);
+
+		glm::vec3 newPointCR = interpolation::evalCatmullRom(cp[(N+i-1)%N], cp[(i) % N], cp[(i + 1) % N], cp[(i + 2) % 4], 0.5, path_pos - i); 
+		
+		sphere1.translate(newPointLin);
+		sphere2.translate(newPointCR);
 
 		auto const window_size = window->GetDimensions();
 		glViewport(0, 0, window_size.x, window_size.y);
@@ -203,7 +227,8 @@ eda221::Assignment2::run()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-		circle_rings.render(mCamera.GetWorldToClipMatrix(), circle_rings.get_transform());
+		sphere1.render(mCamera.GetWorldToClipMatrix(), sphere1.get_transform());
+		sphere2.render(mCamera.GetWorldToClipMatrix(), sphere2.get_transform());
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		Log::View::Render();
@@ -211,6 +236,7 @@ eda221::Assignment2::run()
 
 		window->Swap();
 		lastTime = nowTime;
+		path_pos = (path_pos + pos_velocity);
 	}
 
 	glDeleteProgram(texcoord_shader);
@@ -229,7 +255,8 @@ int main()
 	try {
 		eda221::Assignment2 assignment2;
 		assignment2.run();
-	} catch (std::runtime_error const& e) {
+	}
+	catch (std::runtime_error const& e) {
 		LogError(e.what());
 	}
 	Bonobo::Destroy();
