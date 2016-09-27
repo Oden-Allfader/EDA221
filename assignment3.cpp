@@ -68,11 +68,17 @@ void
 eda221::Assignment3::run()
 {
 	// Load the sphere geometry
-	auto circle_ring_shape = parametric_shapes::createSphere(20u,20u, 2.0f);
+	auto circle_ring_shape = parametric_shapes::createSphere(40u,40u, 2.0f);
 	if (circle_ring_shape.vao == 0u) {
 		LogError("Failed to retrieve the circle ring mesh");
 		return;
 	}
+	auto skybox_shape = parametric_shapes::createSphere(50u, 50u, 100.0f);
+	if (skybox_shape.vao == 0u) {
+		LogError("Failed to retrieve the circle ring mesh");
+		return;
+	}
+
 
 	// Set up the camera
 	FPSCameraf mCamera(bonobo::pi / 4.0f,
@@ -87,6 +93,11 @@ eda221::Assignment3::run()
 	auto fallback_shader = eda221::createProgram("fallback.vert", "fallback.frag");
 	if (fallback_shader == 0u) {
 		LogError("Failed to load fallback shader");
+		return;
+	}
+	auto skybox_shader = eda221::createProgram("skybox.vert", "skybox.frag");
+	if (skybox_shader == 0u) {
+		LogError("Failed to load skybox shader");
 		return;
 	}
 	GLuint diffuse_shader = 0u, normal_shader = 0u, texcoord_shader = 0u, phong_shader = 0u;
@@ -135,13 +146,15 @@ eda221::Assignment3::run()
 		glUniform3fv(glGetUniformLocation(program, "specular"), 1, glm::value_ptr(specular));
 		glUniform1f(glGetUniformLocation(program, "shininess"), shininess);
 	};
-
+	auto cubetex = loadTextureCubeMap("snow/posx.png", "snow/negx.png", "snow/posy.png", "snow/negy.png", "snow/posz.png", "snow/negz.png");
 	auto polygon_mode = polygon_mode_t::fill;
-
 	auto circle_ring = Node();
+	auto sky = Node();
 	circle_ring.set_geometry(circle_ring_shape);
 	circle_ring.set_program(fallback_shader, set_uniforms);
-
+	sky.set_geometry(skybox_shape);
+	sky.set_program(skybox_shader,set_uniforms);
+	sky.add_texture("cubeMapName", cubetex, GL_TEXTURE_CUBE_MAP);
 	glEnable(GL_DEPTH_TEST);
 
 	// Enable face culling to improve performance:
@@ -212,7 +225,7 @@ eda221::Assignment3::run()
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		circle_ring.render(mCamera.GetWorldToClipMatrix(), circle_ring.get_transform());
-
+		sky.render(mCamera.GetWorldToClipMatrix(), sky.get_transform());
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		Log::View::Render();
@@ -249,6 +262,8 @@ eda221::Assignment3::run()
 	diffuse_shader = 0u;
 	glDeleteProgram(phong_shader);
 	phong_shader = 0u;
+	glDeleteProgram(skybox_shader);
+	skybox_shader = 0u;
 }
 
 int main()
