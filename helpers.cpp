@@ -52,9 +52,9 @@ eda221::loadTexture2D(std::string const& filename)
 
 GLuint
 eda221::loadTextureCubeMap(std::string const& posx, std::string const& negx,
-                           std::string const& posy, std::string const& negy,
-                           std::string const& posz, std::string const& negz,
-                           bool generate_mipmap)
+	std::string const& posy, std::string const& negy,
+	std::string const& posz, std::string const& negz,
+	bool generate_mipmap)
 {
 	GLuint texture = 0u;
 	// Create an OpenGL texture object. Similarly to `glGenVertexArrays()`
@@ -103,14 +103,14 @@ eda221::loadTextureCubeMap(std::string const& posx, std::string const& negx,
 	// start by filling the face sitting on the negative side of the
 	// x-axis by specifying GL_TEXTURE_CUBE_MAP_NEGATIVE_X.
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-	             /* mipmap level, you'll see that in EDAN35 */0,
-	             /* how are the components internally stored */GL_RGBA,
-	             /* the width of the cube map's face */static_cast<GLsizei>(width),
-	             /* the height of the cube map's face */static_cast<GLsizei>(height),
-	             /* must always be 0 */0,
-	             /* the format of the pixel data: which components are available */GL_RGBA,
-	             /* the type of each component */GL_UNSIGNED_BYTE,
-	             /* the pointer to the actual data on the CPU */reinterpret_cast<GLvoid const*>(data.data()));
+		/* mipmap level, you'll see that in EDAN35 */0,
+		/* how are the components internally stored */GL_RGBA,
+		/* the width of the cube map's face */static_cast<GLsizei>(width),
+		/* the height of the cube map's face */static_cast<GLsizei>(height),
+		/* must always be 0 */0,
+		/* the format of the pixel data: which components are available */GL_RGBA,
+		/* the type of each component */GL_UNSIGNED_BYTE,
+		/* the pointer to the actual data on the CPU */reinterpret_cast<GLvoid const*>(data.data()));
 
 	data = getTextureData("cubemaps/" + posx, width, height, false);
 	if (data.empty()) {
