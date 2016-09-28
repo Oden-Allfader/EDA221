@@ -44,7 +44,7 @@ eda221::Assignment3::Assignment3()
 	Log::View::Init();
 
 	window = Window::Create("EDA221: Assignment 3", config::resolution_x,
-	                        config::resolution_y, config::msaa_rate, false);
+		config::resolution_y, config::msaa_rate, false);
 	if (window == nullptr) {
 		Log::View::Destroy();
 		throw std::runtime_error("Failed to get a window: aborting!");
@@ -68,12 +68,23 @@ void
 eda221::Assignment3::run()
 {
 	// Load the sphere geometry
-	auto circle_ring_shape = parametric_shapes::createSphere(40u,40u, 2.0f);
+	auto circle_ring_shape = parametric_shapes::createCircleRing(40u, 40u, 2.0f,4.0f);
 	if (circle_ring_shape.vao == 0u) {
 		LogError("Failed to retrieve the circle ring mesh");
 		return;
 	}
-	auto skybox_shape = parametric_shapes::createSphere(50u, 50u, 100.0f);
+
+	auto sphere_shape = parametric_shapes::createSphere(40u, 40u, 2.0f);
+	if (sphere_shape.vao == 0u) {
+		LogError("Failed to retrieve the circle ring mesh");
+		return;
+	}
+	auto skybox_shape = parametric_shapes::createSphere(50u, 50u, 50.0f);
+	if (skybox_shape.vao == 0u) {
+		LogError("Failed to retrieve the circle ring mesh");
+		return;
+	}
+	auto quad_shape = parametric_shapes::createQuad(4.0f,4.0f);
 	if (skybox_shape.vao == 0u) {
 		LogError("Failed to retrieve the circle ring mesh");
 		return;
@@ -82,8 +93,8 @@ eda221::Assignment3::run()
 
 	// Set up the camera
 	FPSCameraf mCamera(bonobo::pi / 4.0f,
-	                   static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
-	                   0.01f, 1000.0f);
+		static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
+		0.01f, 1000.0f);
 	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
 	mCamera.mMouseSensitivity = 0.003f;
 	mCamera.mMovementSpeed = 0.025;
@@ -100,8 +111,15 @@ eda221::Assignment3::run()
 		LogError("Failed to load skybox shader");
 		return;
 	}
+
+	auto bump_shader = eda221::createProgram("bumpmap.vert", "bumpmap.frag");
+	if (bump_shader == 0u) {
+		LogError("Failed to load bump shader");
+		return;
+	}
+
 	GLuint diffuse_shader = 0u, normal_shader = 0u, texcoord_shader = 0u, phong_shader = 0u;
-	auto const reload_shaders = [&diffuse_shader,&normal_shader,&texcoord_shader,&phong_shader](){
+	auto const reload_shaders = [&diffuse_shader, &normal_shader, &texcoord_shader, &phong_shader]() {
 		if (diffuse_shader != 0u)
 			glDeleteProgram(diffuse_shader);
 		diffuse_shader = eda221::createProgram("diffuse.vert", "diffuse.frag");
@@ -129,7 +147,7 @@ eda221::Assignment3::run()
 	reload_shaders();
 
 	auto light_position = glm::vec3(-2.0f, 4.0f, 2.0f);
-	auto const set_uniforms = [&light_position](GLuint program){
+	auto const set_uniforms = [&light_position](GLuint program) {
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
 	};
 
@@ -138,7 +156,7 @@ eda221::Assignment3::run()
 	auto diffuse = glm::vec3(0.7f, 0.2f, 0.4f);
 	auto specular = glm::vec3(1.0f, 1.0f, 1.0f);
 	auto shininess = 1.0f;
-	auto const phong_set_uniforms = [&light_position,&camera_position,&ambient,&diffuse,&specular,&shininess](GLuint program){
+	auto const phong_set_uniforms = [&light_position, &camera_position, &ambient, &diffuse, &specular, &shininess](GLuint program) {
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
 		glUniform3fv(glGetUniformLocation(program, "camera_position"), 1, glm::value_ptr(camera_position));
 		glUniform3fv(glGetUniformLocation(program, "ambient"), 1, glm::value_ptr(ambient));
@@ -146,22 +164,30 @@ eda221::Assignment3::run()
 		glUniform3fv(glGetUniformLocation(program, "specular"), 1, glm::value_ptr(specular));
 		glUniform1f(glGetUniformLocation(program, "shininess"), shininess);
 	};
-	auto cubetex = loadTextureCubeMap("snow/posx.png", "snow/negx.png", "snow/posy.png", "snow/negy.png", "snow/posz.png", "snow/negz.png");
+	std::string const& cubename = "forbidden/";
+	auto cubetex = loadTextureCubeMap(cubename + "posx.png", cubename + "negx.png", cubename + "posy.png", cubename + "negy.png", cubename + "posz.png", cubename + "negz.png");
 	auto polygon_mode = polygon_mode_t::fill;
 	auto circle_ring = Node();
+	circle_ring.set_geometry(sphere_shape);
+	circle_ring.set_program(phong_shader, phong_set_uniforms);
+	
 	auto sky = Node();
-	circle_ring.set_geometry(circle_ring_shape);
-	circle_ring.set_program(fallback_shader, set_uniforms);
 	sky.set_geometry(skybox_shape);
-	sky.set_program(skybox_shader,set_uniforms);
+	sky.set_program(skybox_shader, phong_set_uniforms);
 	sky.add_texture("cubeMapName", cubetex, GL_TEXTURE_CUBE_MAP);
 	glEnable(GL_DEPTH_TEST);
-
+	circle_ring.set_translation(glm::vec3(10.0f,0.0f,0.0f));
 	// Enable face culling to improve performance:
 	//glEnable(GL_CULL_FACE);
 	//glCullFace(GL_FRONT);
 	//glCullFace(GL_BACK);
-
+	auto quadTex = loadTexture2D("earth_diffuse.png");
+	auto quadBump = loadTexture2D("earth_bump.png");
+	auto bTest = Node();
+	bTest.set_geometry(circle_ring_shape);
+	bTest.set_program(bump_shader,phong_set_uniforms);
+	bTest.add_texture("thisTex",quadTex);
+	bTest.add_texture("myBumpMap",quadBump);
 
 	f64 ddeltatime;
 	size_t fpsSamples = 0;
@@ -205,15 +231,15 @@ eda221::Assignment3::run()
 			reload_shaders();
 		}
 		switch (polygon_mode) {
-			case polygon_mode_t::fill:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				break;
-			case polygon_mode_t::line:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				break;
-			case polygon_mode_t::point:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-				break;
+		case polygon_mode_t::fill:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			break;
+		case polygon_mode_t::line:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			break;
+		case polygon_mode_t::point:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+			break;
 		}
 
 		camera_position = mCamera.mWorld.GetTranslation();
@@ -226,6 +252,7 @@ eda221::Assignment3::run()
 
 		circle_ring.render(mCamera.GetWorldToClipMatrix(), circle_ring.get_transform());
 		sky.render(mCamera.GetWorldToClipMatrix(), sky.get_transform());
+		bTest.render(mCamera.GetWorldToClipMatrix(), sky.get_transform());
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		Log::View::Render();
@@ -237,13 +264,13 @@ eda221::Assignment3::run()
 			ImGui::ColorEdit3("Specular", glm::value_ptr(specular));
 			ImGui::SliderFloat("Shininess", &shininess, 0.0f, 1000.0f);
 			ImGui::SliderFloat3("Light Position", glm::value_ptr(light_position), -20.0f, 20.0f);
-//			ImGui::SliderInt("Faces Nb", &faces_nb, 1u, 16u);
+			//			ImGui::SliderInt("Faces Nb", &faces_nb, 1u, 16u);
 		}
 		ImGui::End();
 
 		ImGui::Begin("Render Time", &opened, ImVec2(120, 50), -1.0f, 0);
 		if (opened)
-			ImGui::Text("%.3f ms, %.1f fps", ddeltatime, 1000/(ddeltatime));
+			ImGui::Text("%.3f ms, %.1f fps", ddeltatime, 1000 / (ddeltatime));
 		ImGui::End();
 
 		ImGui::Render();
@@ -264,6 +291,8 @@ eda221::Assignment3::run()
 	phong_shader = 0u;
 	glDeleteProgram(skybox_shader);
 	skybox_shader = 0u;
+	glDeleteProgram(bump_shader);
+	bump_shader = 0u;
 }
 
 int main()
@@ -272,7 +301,8 @@ int main()
 	try {
 		eda221::Assignment3 assignment3;
 		assignment3.run();
-	} catch (std::runtime_error const& e) {
+	}
+	catch (std::runtime_error const& e) {
 		LogError(e.what());
 	}
 	Bonobo::Destroy();
