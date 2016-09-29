@@ -74,7 +74,7 @@ eda221::Assignment3::run()
 		return;
 	}
 
-	auto sphere_shape = parametric_shapes::createSphere(40u, 40u, 2.0f);
+	auto sphere_shape = parametric_shapes::createSphere(40u, 40u, 4.0f);
 	if (sphere_shape.vao == 0u) {
 		LogError("Failed to retrieve the circle ring mesh");
 		return;
@@ -184,7 +184,7 @@ eda221::Assignment3::run()
 	auto quadTex = loadTexture2D("earth_diffuse.png");
 	auto quadBump = loadTexture2D("earth_bump.png");
 	auto bTest = Node();
-	bTest.set_geometry(circle_ring_shape);
+	bTest.set_geometry(sphere_shape);
 	bTest.set_program(bump_shader,phong_set_uniforms);
 	bTest.add_texture("thisTex",quadTex);
 	bTest.add_texture("myBumpMap",quadBump);
