@@ -21,6 +21,9 @@ out VS_OUT{
 	vec2 fTex;
 	vec3 fV;
 	vec3 fL;
+	vec3 sN;
+	vec3 sT;
+	vec3 sB;
 } vs_out;
 
 
@@ -40,7 +43,9 @@ void main(){
 	vec3 dir2 = vec3(-0.7,0.0,0.7);
 
 	vec3 worldPos = (vertex_model_to_world * vec4(vertex,1.0)).xyz;
-
+	vs_out.sN = (vec4(normal,1.0)).xyz;
+	vs_out.sT = (vec4(tangent,1.0)).xyz;
+	vs_out.sB = (vec4(binormal,1.0)).xyz;
 	vs_out.fV = camera_position - worldPos;
 	vs_out.fL = light_position - worldPos;
 	vs_out.fTex = vec2(texcoord.x,texcoord.y);
