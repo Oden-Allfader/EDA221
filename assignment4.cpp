@@ -68,6 +68,7 @@ void eda221::Assignment4::run()
 {
 	// Load the sphere geometry
 	auto quad_shape = parametric_shapes::createQuad(100u,100u,100u,100u);
+	//auto quad_shape = parametric_shapes::createSphere(100u, 100u, 5.0f);
 	if (quad_shape.vao == 0u) {
 		LogError("Failed to retrive quad mesh");
 		return;
@@ -106,7 +107,7 @@ void eda221::Assignment4::run()
 	};
 	auto polygon_mode = polygon_mode_t::fill;
 	auto water_quad = Node();
-	auto bumpTex = loadTexture2D("water.png");
+	auto bumpTex = loadTexture2D("waves.png");
 	std::string cubeName = "cloudyhills/";
 	auto cloud = loadTextureCubeMap(cubeName + "posx.png", cubeName + "negx.png", cubeName + "posy.png", cubeName + "negy.png", cubeName + "posz.png", cubeName + "negz.png",true);
 	water_quad.set_geometry(quad_shape);
