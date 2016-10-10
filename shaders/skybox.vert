@@ -14,7 +14,7 @@ out VS_OUT{
 } vs_out;
 
 void main(){
-	//vs_out.fN = (normal_model_to_world * vec4(normal,0.0)).xyz;
-	vs_out.fN = (vertex_model_to_world * vec4(vertex,1.0)).xyz;
+	vs_out.fN = (normal_model_to_world * vec4(normal,0.0)).xyz;
+	//vs_out.fN = (vertex_model_to_world * vec4(vertex,1.0)).xyz;
 	gl_Position = vertex_world_to_clip * vertex_model_to_world * vec4(vertex + camera_position, 1.0);
 }

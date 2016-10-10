@@ -35,12 +35,12 @@ void main(){
 	texCoord.z = 0.0;
 
 	//Bumping
-	vec2 texScale = vec2(4.0,4.0);
+	vec2 texScale = vec2(8.0,4.0);
 	float bumpTime = mod(time,100);
-	vec2 bumpSpeed = vec2(-0.5,0.0);
-	vec2 bumpCoord0 = texCoord.xy*texScale + bumpTime*bumpSpeed*0.01;
-	vec2 bumpCoord1 = texCoord.xy*texScale*2 + bumpTime*bumpSpeed*0.04;
-	vec2 bumpCoord2 = texCoord.xy*texScale*4 + bumpTime*bumpSpeed*0.08;
+	vec2 bumpSpeed = vec2(-0.01,0.0);
+	vec2 bumpCoord0 = texCoord.xy*texScale + bumpTime*bumpSpeed;
+	vec2 bumpCoord1 = texCoord.xy*texScale*2 + bumpTime*bumpSpeed*4;
+	vec2 bumpCoord2 = texCoord.xy*texScale*4 + bumpTime*bumpSpeed*8;
 	vec3 n0 = 2.0 * texture(bumpTex,bumpCoord0).xyz - 1;
 	vec3 n1 = 2.0 * texture(bumpTex,bumpCoord1).xyz - 1;
 	vec3 n2 = 2.0 * texture(bumpTex,bumpCoord2).xyz - 1;
@@ -57,8 +57,8 @@ void main(){
 	normal = normalize(vector_transform * normal); //Tangent space to world space
 	
 	// Coloring
-	vec4 colorDeep = vec4(0.0,0.0,0.1,1.0);
-	vec4 colorShallow = vec4(0.0,0.5,0.5,1.0);
+	vec4 colorDeep = vec4(126.0/256 , 32.0/256.0 , 4.0/256.0 , 1.0);
+	vec4 colorShallow = vec4(0.812,0.063,0.125,1.0);
 	float facing = 1 - max(dot(V,normal),0.0);
 	vec4 waterColor = mix(colorDeep,colorShallow,facing);
 
@@ -68,8 +68,8 @@ void main(){
 	float fresnel = r0 + (1.0 - r0)*pow((1-dot(V,normal)),5.0);
 
 	//Refraction
-	vec4 refraction = clamp(texture(cubeTex,refract(V,normal,1.33)),0.0,1.0);
+	vec4 refraction = texture(cubeTex,refract(V,normal,1/1.33));
 	//frag_color = refraction;
-	frag_color = clamp(waterColor +  (reflection * fresnel) + (refraction * (1 - fresnel)),0.0,1.0);
+	frag_color = waterColor/* +  (reflection * fresnel)/2 + (refraction * (1 - fresnel))/2*/;
 
 }
