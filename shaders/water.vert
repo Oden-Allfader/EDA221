@@ -29,14 +29,14 @@ out VS_OUT{
 
 void main(){
 	//first wave
-	float a1 = 0.5;
+	float a1 = 1.0;
 	float f1 = 0.1;
 	float p1 = 0.5;
 	float k1 = 2.0;
 	vec3 dir1 = vec3(-1.0,0.0,0.0);
 
 	//second wave
-	float a2 = 0.25;
+	float a2 = 0.5;
 	float f2 = 0.2;
 	float p2 = 1.3;
 	float k2 = 4.0;
