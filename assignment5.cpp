@@ -70,7 +70,7 @@ void eda221::Assignment5::run()
 {
 	// Loading the level geometry
 	// Water that goes to the edge of the skybox
-	auto water_shape = parametric_shapes::createQuad(100u, 100u, 500u, 500u);
+	auto water_shape = parametric_shapes::createQuad(100u, 100u, 200u,200u);
 	if (water_shape.vao == 0u) {
 		LogError("Failed to retrive quad mesh");
 		return;
@@ -99,11 +99,12 @@ void eda221::Assignment5::run()
 		LogError("Failed to retrieve the boundry mesh");
 		return;
 	}
+	/*
 	auto tetra = eda221::loadObjects("stone.obj");
 	if (tetra.empty()) {
 		LogError("Failed to load head object");
 		return;
-	}
+	}*/
 	float food_radius = 1.0f;
 	auto food_shape = parametric_shapes::createSphere(10, 10, food_radius);
 	if (food_shape.vao == 0u) {
@@ -138,20 +139,25 @@ void eda221::Assignment5::run()
 		return;
 	}
 	// Shader for the snake head
-	auto snake_head_shader = eda221::createProgram("diffuse.vert", "diffuse.frag");
+	auto snake_head_shader = eda221::createProgram("boundry.vert", "boundry.frag");
 	if (snake_head_shader == 0u) {
 		LogError("Failed to load snake head shader");
 		return;
 	}
 	// Shader for the boundry
-	auto boundry_shader = eda221::createProgram("diffuse.vert", "diffuse.frag");
+	auto boundry_shader = eda221::createProgram("boundry.vert", "boundry.frag");
 	if (boundry_shader == 0u) {
-		LogError("Failed to load snake head shader");
+		LogError("Failed to load boundy shader");
 		return;
 	}
 	// Shader for the food
-	auto food_shader = eda221::createProgram("diffuse.vert", "diffuse.frag");
+	auto food_shader = eda221::createProgram("food.vert", "food.frag");
 	if (food_shader == 0u) {
+		LogError("Failed to load food shader");
+		return;
+	}
+	auto ogre_shader = eda221::createProgram("diffuse.vert", "diffuse.frag");
+	if (ogre_shader == 0u) {
 		LogError("Failed to load food shader");
 		return;
 	}
@@ -177,9 +183,10 @@ void eda221::Assignment5::run()
 	auto polygon_mode = polygon_mode_t::fill;
 
 	auto bumpTex = loadTexture2D("lavanormal.png");
-	std::string cubeName = "Lava/";
+	std::string cubeName = "snow/";
 	auto cloud = loadTextureCubeMap(cubeName + "posx.png", cubeName + "negx.png", cubeName + "posy.png", cubeName + "negy.png", cubeName + "posz.png", cubeName + "negz.png", true);
-
+	auto stone_tex = loadTexture2D("fieldstone_diffuse.png");
+	auto stone_bump = loadTexture2D("fieldstone_bump.png");
 	//Level Node
 	auto water_quad = Node();
 	water_quad.set_geometry(water_shape);
@@ -197,7 +204,7 @@ void eda221::Assignment5::run()
 	snake_head.set_program(snake_head_shader, set_uniforms);
 	auto snake_head_t = Node();
 	snake_head_t.set_geometry(head_shape.at(0));
-	snake_head_t.set_program(snake_head_shader,set_uniforms);
+	snake_head_t.set_program(ogre_shader,set_uniforms);
 	snake_head.add_child(&snake_head_t);
 	snake_head.scale(glm::vec3(2, 2, 2));
 
@@ -207,6 +214,8 @@ void eda221::Assignment5::run()
 	for (int i = 0; i < no_snake; i++) {
 		snake_bodies[i].set_geometry(snake_shape);
 		snake_bodies[i].set_program(snake_head_shader, set_uniforms);
+		snake_bodies[i].add_texture("myBumpMap", stone_bump);
+		snake_bodies[i].add_texture("thisTex", stone_tex);
 	}
 	//Food node
 	auto food = Node();
@@ -214,6 +223,7 @@ void eda221::Assignment5::run()
 	food.set_program(food_shader,set_uniforms);
 
 	//Creation of boundry nodes.
+
 	int const no_boundries = 100;
 	Node boundries[no_boundries];
 	Node tetras[no_boundries];
@@ -222,8 +232,11 @@ void eda221::Assignment5::run()
 		boundries[i].set_geometry(boundry_shape);
 		boundries[i].set_program(boundry_shader, set_uniforms);
 		boundries[i].add_child(&tetras[i]);
+		boundries[i].add_texture("myBumpMap",stone_bump);
+		boundries[i].add_texture("thisTex", stone_tex);
+		/*
 		tetras[i].set_geometry(tetra.at(0));
-		tetras[i].set_program(boundry_shader,set_uniforms);
+		tetras[i].set_program(boundry_shader,set_uniforms);*/
 	}
 	for (int i = 0; i < 25; i++) {
 		boundries[i].set_translation(glm::vec3(-100.0f, 0.0f, 100.0f - 8 * i));
@@ -252,10 +265,10 @@ void eda221::Assignment5::run()
 	//glCullFace(GL_BACK);
 
 	//Initializing positions.
-	water_quad.translate(glm::vec3(-250.0f, -1.5f, -250.0f)); // Moving lava down
+	water_quad.translate(glm::vec3(-100.0f, -1.5f, -100.0f)); // Moving lava down
 	snake_head.set_translation(glm::vec3(0.0f, 0.0f, 0.0f)); // centering snake head:
 	float turning = 0.0f; //init angle
-	float speed = 25.0f; // init speed
+	float speed = 50.0f; // init speed
 	glm::vec3 snake_pos = glm::vec3(0.0f, 0.0f, 0.0f); //init snake pos
 	bool crashed = false;//game losing bool
 	glm::vec3 food_pos = glm::vec3(0, 0, 0); //Calculating pos of food
@@ -266,6 +279,7 @@ void eda221::Assignment5::run()
 	food.set_translation(food_pos);
 	int count = 0;
 	unsigned int score = 0;
+	unsigned int high_score = 0;
 	float distance = 0;
 	while (!glfwWindowShouldClose(window->GetGLFW_Window())) {
 		nowTime = GetTimeMilliseconds();
@@ -279,7 +293,11 @@ void eda221::Assignment5::run()
 		glfwPollEvents();
 		inputHandler->Advance();
 		mCamera.Update(ddeltatime, *inputHandler);
-		mCamera.mWorld.LookAt(glm::vec3(snake_pos.x,snake_pos.y,snake_pos.z));
+
+		
+
+
+
 		ImGui_ImplGlfwGL3_NewFrame();
 
 		if (inputHandler->GetKeycodeState(GLFW_KEY_Z) & JUST_PRESSED) {
@@ -304,6 +322,10 @@ void eda221::Assignment5::run()
 		else if (inputHandler->GetKeycodeState(GLFW_KEY_2) & PRESSED) {
 			turning = fmod(turning - 0.1, bonobo::two_pi);
 		}
+		mCamera.mWorld.SetTranslate(glm::vec3((snake_pos.x - sin(turning + bonobo::pi/2)*60.0f), 20.0f, snake_pos.z - cos(turning + bonobo::pi / 2)* 60.0f));
+		mCamera.mWorld.LookAt(glm::vec3(snake_pos.x, snake_pos.y, snake_pos.z));
+
+
 
 		snake_head.translate(glm::vec3(speed*ddeltatime / 1000 * cos(turning), 0.0f, -speed*ddeltatime / 1000 * sin(turning)));
 		snake_head.set_rotation_y(turning + bonobo::pi/2);
@@ -328,6 +350,9 @@ void eda221::Assignment5::run()
 			if (testSphereSphere(snake_pos, snake_radius, boundry_pos[i], boundry_radius)) {
 				snake_head.translate(glm::vec3(-snake_pos.x, 0, -snake_pos.z));
 				snake_pos = glm::vec3(0.0f, 0.0f, 0.0f);
+				if (score > high_score) {
+					high_score = score;
+				}
 				score = 0;
 			}
 		}
@@ -335,6 +360,9 @@ void eda221::Assignment5::run()
 			if (testSphereSphere(snake_pos, snake_radius, cp[i], snake_radius)) {
 				snake_head.translate(glm::vec3(-snake_pos.x, 0, -snake_pos.z));
 				snake_pos = glm::vec3(0.0f, 0.0f, 0.0f);
+				if (score > high_score) {
+					high_score = score;
+				}
 				score = 0;
 			}
 		}
@@ -375,7 +403,7 @@ void eda221::Assignment5::run()
 
 		ImGui::Begin("Render Time", &opened, ImVec2(120, 50), -1.0f, 0);
 		if (opened)
-			ImGui::Text("%.3f ms, %.1f fps  %.1f turning \n Position of snake: x: %f, y: %f, z: %f , Score: %d", ddeltatime, 1000 / (ddeltatime), turning, snake_pos[0], snake_pos[1], snake_pos[2],score);
+			ImGui::Text("%.3f ms, %.1f fps  %.1f turning \n Position of snake: x: %f, y: %f, z: %f \n , Score: %d \n Highscore: %d", ddeltatime, 1000 / (ddeltatime), turning, snake_pos[0], snake_pos[1], snake_pos[2],score,high_score);
 		ImGui::End();
 
 		ImGui::Render();
